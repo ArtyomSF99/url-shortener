@@ -1,0 +1,21 @@
+# Git folder
+.git
+
+# Dependency directories in root and all apps
+node_modules
+apps/**/node_modules
+
+# Build output folders
+dist
+.next
+apps/**/dist
+apps/**/.next
+
+# Local environment files
+.env
+*.env
+
+# IDE and OS files
+.vscode
+.idea
+*.DS_Store

@@ -1,0 +1,31 @@
+FROM node:20-alpine
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Set the workspace root as the working directory
+WORKDIR /usr/src/app
+
+# Copy all the files pnpm needs to understand the workspace
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY package.json ./
+
+# Copy the backend's specific package.json
+COPY apps/backend/package.json ./apps/backend/
+
+# Install ALL dependencies (including devDependencies) for the backend
+RUN pnpm install --filter backend
+
+# Copy the backend's source code
+# This is the crucial step that copies your tsconfig.json, src folder, etc.
+COPY apps/backend/ ./apps/backend/
+
+# Change the working directory into the app's folder
+WORKDIR /usr/src/app/apps/backend
+
+# Expose the application port
+EXPOSE 3000
+
+# The command to start the NestJS development server in watch mode
+CMD ["pnpm", "run", "start:dev"]

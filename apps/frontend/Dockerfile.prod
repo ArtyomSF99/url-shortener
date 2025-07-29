@@ -1,0 +1,57 @@
+# --- Stage 1: The Builder ---
+# This stage installs all dependencies and builds the application.
+FROM node:20-alpine AS builder
+
+# Set the working directory for the entire monorepo
+WORKDIR /usr/src/app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy all the necessary files for pnpm to understand the workspace
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY package.json ./
+
+# Copy the source code for BOTH apps to resolve workspace dependencies
+COPY apps/backend/ ./apps/backend/
+COPY apps/frontend/ ./apps/frontend/
+
+# Install ALL dependencies for the entire workspace
+RUN pnpm install --frozen-lockfile
+
+# Build the frontend application for production
+RUN pnpm --filter frontend run build
+
+# --- Stage 2: The Production Image ---
+# This stage creates the final, lean image.
+FROM node:20-alpine
+
+# Set the working directory inside the final image
+WORKDIR /usr/src/app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# The 'node' user already exists in the base image, so we don't need to create it.
+
+# Copy only the necessary files for running the production server
+COPY --chown=node:node --from=builder /usr/src/app/apps/frontend/package.json ./
+COPY --chown=node:node --from=builder /usr/src/app/pnpm-lock.yaml ./
+COPY --chown=node:node --from=builder /usr/src/app/pnpm-workspace.yaml ./
+
+# Install ONLY production dependencies for the frontend
+RUN pnpm install --filter frontend --prod
+
+# Copy the built Next.js application from the builder stage
+COPY --chown=node:node --from=builder /usr/src/app/apps/frontend/.next ./.next
+COPY --chown=node:node --from=builder /usr/src/app/apps/frontend/public ./public
+
+# Switch to the non-root user
+USER node
+
+# Expose the port Next.js runs on
+EXPOSE 3001
+
+# The command to start the optimized Next.js production server
+CMD ["pnpm", "start"]

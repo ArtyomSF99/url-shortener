@@ -1,0 +1,19 @@
+# Dependencies
+node_modules
+apps/**/node_modules
+
+# Build output
+dist
+.next
+apps/**/dist
+apps/**/.next
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE and OS files
+.vscode
+.idea
+*.DS_Store

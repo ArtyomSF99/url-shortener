@@ -1,0 +1,43 @@
+# --- Stage 1: The Builder (This stage is correct, no changes) ---
+FROM node:20-alpine AS builder
+RUN npm install -g pnpm
+WORKDIR /usr/src/app
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY package.json ./
+COPY apps/backend/ ./apps/backend
+RUN pnpm install --filter backend --frozen-lockfile
+RUN pnpm --filter backend run build
+
+# --- Stage 2: The Production Image (Corrected permissions) ---
+FROM node:20-alpine
+RUN npm install -g pnpm
+WORKDIR /usr/src/app
+
+# The 'node' user already exists in the base image.
+
+# Copy ALL the necessary files for installation while we are still ROOT.
+COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
+COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
+COPY --from=builder /usr/src/app/package.json ./
+COPY --from=builder /usr/src/app/apps/backend/package.json ./apps/backend/
+
+# Now that all directories are created, recursively change the ownership
+# of the ENTIRE working directory to the 'node' user. THIS IS THE FIX.
+RUN chown -R node:node .
+
+# NOW we switch to the non-root user.
+USER node
+
+# Run the installation as the 'node' user, who now owns all these files.
+RUN pnpm install --filter backend --prod --frozen-lockfile
+
+# Copy the compiled code from the builder. Use --chown to ensure it's also owned by node.
+COPY --chown=node:node --from=builder /usr/src/app/apps/backend/dist ./apps/backend/dist
+
+# Set the final working directory
+WORKDIR /usr/src/app/apps/backend
+
+# Expose the port and run the application
+EXPOSE 3000
+CMD ["node", "dist/main"]
