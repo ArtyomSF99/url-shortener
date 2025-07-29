@@ -86,7 +86,9 @@ You can run the application in two modes: **Development (hybrid)** or **Producti
 
 This mode is optimized for development. It runs the backend services (API, DB, Redis) in Docker and the Next.js frontend on your local machine for the best hot-reloading experience.
 
-You will need two separate terminals.
+You can either start the backend and frontend separately in two terminals, or run everything together with a single command.
+
+#### Option 1: Separate Terminals
 
 **In Terminal 1 (Backend):**
 
@@ -100,6 +102,13 @@ pnpm run dev:backend
 ```sh
 # Starts the Next.js development server locally
 pnpm run dev:frontend
+```
+
+#### Option 2: All Together
+
+```sh
+# Starts both backend and frontend concurrently
+pnpm dev
 ```
 
 - Backend API: [http://localhost:3000](http://localhost:3000)
@@ -202,14 +211,16 @@ Extensive load testing was performed using **k6**, simulating up to **1000 concu
 The application is stable under heavy load and designed for scalability.
 
 ---
-
 ## Stress Testing
 
 A stress test script is included in the project.
 
+> **Note:** [k6](https://k6.io/) must be installed on your system to run the stress tests.  
+> You can install it by following the [official installation guide](https://k6.io/docs/getting-started/installation/).
+
 1. Ensure the application is running (dev or prod mode).
 2. From the project root, run:
 
-     ```sh
-     k6 run stress-test.js
-     ```
+    ```sh
+    k6 run stress-test.js
+    ```
