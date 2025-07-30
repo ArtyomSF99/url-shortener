@@ -4,6 +4,14 @@ A full-stack URL shortener application using Next.js (frontend), Node.js (backen
 
 ---
 
+## Deployments
+
+The application demo is deployed and available at:
+
+- **Production:** [https://app.sfreedom.net](https://app.sfreedom.net)
+
+---
+
 ## Features
 
 - Shorten URLs with analytics
@@ -219,9 +227,11 @@ A stress test script is included in the project.
 > **Note:** [k6](https://k6.io/) must be installed on your system to run the stress tests.  
 > You can install it by following the [official installation guide](https://k6.io/docs/getting-started/installation/).
 
-1. Ensure the application is running (dev or prod mode).
+1. Ensure the application is running (dev or prod mode with disabled Rate Limitter).
 2. From the project root, run:
 
     ```sh
     k6 run stress-test.js
     ```
+
+---
