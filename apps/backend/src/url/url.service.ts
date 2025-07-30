@@ -7,12 +7,14 @@ import {
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cache } from 'cache-manager';
+import * as dns from 'dns';
 import { nanoid } from 'nanoid';
 import { Repository } from 'typeorm';
 import { ApiException } from 'src/common/exceptions/api.exception';
 import { ErrorCode } from 'src/common/exceptions/error-codes.enum';
 import { CreateUrlDto } from './dto/create-url.dto';
 import { UpdateUrlDto } from './dto/update-url.dto';
+import { promisify } from 'util';
 import { Url } from './entities/url.entity';
 import { QueryParamsDto } from './dto/query-params.dto';
 
@@ -22,6 +24,8 @@ export interface PaginatedUrls {
   page: number;
   limit: number;
 }
+
+const lookup = promisify(dns.lookup);
 
 /**
  * Service for URL management and redirection logic.
@@ -35,7 +39,19 @@ export class UrlService {
   ) {}
 
   async create(createUrlDto: CreateUrlDto, userId: string): Promise<Url> {
-    const { originalUrl, customSlug } = createUrlDto;
+    const { originalUrl, slug: customSlug } = createUrlDto;
+
+    // Check if the domain of the original URL is valid and reachable
+    try {
+      const urlObject = new URL(originalUrl);
+      await lookup(urlObject.hostname);
+    } catch (error) {
+      throw new ApiException(
+        'The provided URL is invalid or its domain cannot be reached.',
+        ErrorCode.INVALID_URL,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     let slug = customSlug || nanoid(7);
 
@@ -169,7 +185,11 @@ export class UrlService {
       const url = await this.urlRepository.findOneBy({ slug });
 
       if (!url) {
-        throw new NotFoundException(`URL with slug '${slug}' not found`);
+        throw new ApiException(
+          `URL with slug '${slug}' not found`,
+          ErrorCode.URL_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       originalUrl = url.originalUrl;

@@ -14,7 +14,7 @@ import { UrlModule } from './url/url.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { EnvKey } from './common/config/env-keys.enum';
-
+import { RunMode } from './common/config/run-mode.enum';
 
 /**
  * Root application module.
@@ -23,10 +23,14 @@ import { EnvKey } from './common/config/env-keys.enum';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot(dataSourceOptions),
-    ThrottlerModule.forRoot({
-      ttl: 60000,
-      limit: 20,
-    }),
+    ...(process.env.NODE_ENV === RunMode.DEVELOPMENT
+      ? []
+      : [
+          ThrottlerModule.forRoot({
+            ttl: 60,
+            limit: 10,
+          }),
+        ]),
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
@@ -43,7 +47,7 @@ import { EnvKey } from './common/config/env-keys.enum';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const isProduction =
-          configService.get<string>(EnvKey.NODE_ENV) === 'production';
+          configService.get<string>(EnvKey.NODE_ENV) === RunMode.PRODUCTION;
         return {
           pinoHttp: {
             transport: !isProduction
@@ -61,10 +65,7 @@ import { EnvKey } from './common/config/env-keys.enum';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        redis: {
-          host: 'redis',
-          port: 6379,
-        },
+        url: configService.get<string>(EnvKey.REDIS_URL),
       }),
     }),
     UrlModule,

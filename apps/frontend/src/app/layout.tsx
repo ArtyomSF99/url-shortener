@@ -4,6 +4,8 @@ import { Inter } from "next/font/google";
 import { AuthProvider } from "../contexts/AuthContext";
 import { Navbar } from "../components/Navbar";
 import "./globals.css";
+import { Toaster } from "sonner";
+import { Tooltip } from "@/components/Tooltip";
 
 /**
  * Root layout component for the application.
@@ -26,6 +28,8 @@ export default function RootLayout({
         <AuthProvider>
           <Navbar />
           <main>{children}</main>
+          <Tooltip id="global-tooltip" />
+          <Toaster />
         </AuthProvider>
       </body>
     </html>

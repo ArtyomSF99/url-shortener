@@ -5,6 +5,8 @@ import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './all-exceptions.filter';
 import { EnvKey } from './common/config/env-keys.enum';
+import { ThrottlerGuard } from 'nestjs-throttler';
+import { RunMode } from './common/config/run-mode.enum';
 
 /**
  * Main entry point for the NestJS application.
@@ -17,20 +19,28 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const httpAdapterHost = app.get(HttpAdapterHost);
 
-  const port = configService.get<number>(EnvKey.PORT) || 3000;
+  const port = configService.get<number>(EnvKey.BACKEND_PORT) || 3000;
   const corsOrigin = configService.get<string>(EnvKey.CORS_ORIGIN);
-  console.log(`Starting server on port ${port} with CORS origin ${corsOrigin}`);
+
   app.useLogger(app.get(Logger));
 
   app.enableCors({
-    origin: corsOrigin,
+    origin: corsOrigin || 'http://localhost:3002',
     methods: 'GET,HEAD,PUT,POST,PATCH',
     credentials: true,
   });
 
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+    }),
+  );
 
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
+
+  if (process.env.NODE_ENV !== RunMode.DEVELOPMENT) {
+    app.useGlobalGuards(app.get(ThrottlerGuard));
+  }
 
   await app.listen(port);
 }

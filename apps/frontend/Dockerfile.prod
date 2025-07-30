@@ -51,7 +51,7 @@ COPY --chown=node:node --from=builder /usr/src/app/apps/frontend/public ./public
 USER node
 
 # Expose the port Next.js runs on
-EXPOSE 3001
+EXPOSE 3002
 
 # The command to start the optimized Next.js production server
-CMD ["pnpm", "start"]
+CMD ["pnpm", "start", "-p", "3002"]

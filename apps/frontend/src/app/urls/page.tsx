@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback, JSX } from "react";
+import { FaPencilAlt } from "react-icons/fa";
+import { FiRefreshCw } from "react-icons/fi";
 import { useAuth } from "../../contexts/AuthContext";
 import Link from "next/link";
 import { EditUrlModal } from "../../components/EditUrlModal";
@@ -35,7 +37,7 @@ export default function UrlsPage(): JSX.Element {
 
     try {
       const data = await apiService.getMyLinks(token, currentPage, sortBy);
-      
+
       setUrls(data.data);
       setTotalPages(Math.ceil(data.total / data.limit));
     } catch (err) {
@@ -99,9 +101,21 @@ export default function UrlsPage(): JSX.Element {
     <>
       <main className="container mx-auto p-8 pt-24">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">My Shortened URLs</h1>
+          <h1
+            className="text-2xl font-bold"
+            data-tooltip-id="global-tooltip"
+            data-tooltip-content="My Shortened URLs"
+          >
+            My Shortened URLs
+          </h1>
           <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium">Sort by:</span>
+            <span
+              className="text-sm font-medium"
+              data-tooltip-id="global-tooltip"
+              data-tooltip-content="Sort your links by creation date or number of visits"
+            >
+              Sort by:
+            </span>
             <button
               onClick={() => setSortBy("createdAt")}
               className={`px-3 py-1 text-sm rounded-md ${
@@ -109,6 +123,8 @@ export default function UrlsPage(): JSX.Element {
                   ? "bg-indigo-600 text-white"
                   : "bg-gray-200"
               }`}
+              data-tooltip-id="global-tooltip"
+              data-tooltip-content="Sort by newest links"
             >
               Newest
             </button>
@@ -117,26 +133,24 @@ export default function UrlsPage(): JSX.Element {
               className={`px-3 py-1 text-sm rounded-md ${
                 sortBy === "visits" ? "bg-indigo-600 text-white" : "bg-gray-200"
               }`}
+              data-tooltip-id="global-tooltip"
+              data-tooltip-content="Sort by most visited links"
             >
               Most Visited
             </button>
             <button
               onClick={handleReload}
-              className={`px-3 py-1 text-sm rounded-md bg-gray-300 hover:bg-gray-400 transition-transform duration-300 ${
-              isLoading ? "animate-spin" : ""
-              }`}
-              title="Reload URLs"
+              data-tooltip-id="global-tooltip"
+              data-tooltip-content="Reload URLs"
+              className="px-3 py-1 text-sm rounded-md bg-gray-300 hover:bg-gray-400"
               type="button"
               disabled={isLoading}
             >
-              <span
-              className={`inline-block transition-transform duration-300 ${
-                isLoading ? "animate-spin" : ""
-              }`}
-              style={{ display: "inline-block" }}
-              >
-              &#10227;
-              </span>
+              <FiRefreshCw
+                className={`inline-block ${isLoading ? "animate-spin" : ""}`}
+                data-tooltip-id="global-tooltip"
+                data-tooltip-content="Reload"
+              />
             </button>
           </div>
         </div>
@@ -149,35 +163,77 @@ export default function UrlsPage(): JSX.Element {
               <table className="min-w-full bg-white shadow-md rounded-lg">
                 <thead className="bg-gray-200">
                   <tr>
-                    <th className="py-2 px-4 text-left">Short URL</th>
-                    <th className="py-2 px-4 text-left">Original URL</th>
-                    <th className="py-2 px-4 text-left">Visits</th>
-                    <th className="py-2 px-4 text-left">Actions</th>
+                    <th
+                      className="py-2 px-4 text-left"
+                      data-tooltip-id="global-tooltip"
+                      data-tooltip-content="Your short link"
+                    >
+                      Short URL
+                    </th>
+                    <th
+                      className="py-2 px-4 text-left"
+                      data-tooltip-id="global-tooltip"
+                      data-tooltip-content="The original long URL"
+                    >
+                      Original URL
+                    </th>
+                    <th
+                      className="py-2 px-4 text-end"
+                      data-tooltip-id="global-tooltip"
+                      data-tooltip-content="Number of visits"
+                    >
+                      Visits
+                    </th>
+                    <th
+                      className="py-2 px-4 text-center"
+                      data-tooltip-id="global-tooltip"
+                      data-tooltip-content="Edit your link"
+                    >
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {urls.map((url) => (
                     <tr key={url.id} className="border-b">
-                      <td className="py-2 px-4">
+                      <td
+                        data-tooltip-id="global-tooltip"
+                        data-tooltip-content={`${API_BASE_URL}/${url.slug}`}
+                        className="py-2 px-4"
+                      >
                         <a
                           href={`${API_BASE_URL}/${url.slug}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-indigo-600 hover:underline"
+                          data-tooltip-id="global-tooltip"
+                          data-tooltip-content="Open short URL in new tab"
                         >
                           {`${API_BASE_URL}/${url.slug}`}
                         </a>
                       </td>
-                      <td className="py-2 px-4 truncate max-w-md">
+                      <td
+                        data-tooltip-id="global-tooltip"
+                        data-tooltip-content={url.originalUrl}
+                        className="py-2 px-4 truncate max-w-md"
+                      >
                         {url.originalUrl}
                       </td>
-                      <td className="py-2 px-4">{url.visits}</td>
-                      <td className="py-2 px-4">
+                      <td
+                        data-tooltip-id="global-tooltip"
+                        data-tooltip-content={String(url.visits)}
+                        className="py-2 px-4 text-end"
+                      >
+                        {url.visits}
+                      </td>
+                      <td className="py-2 px-4 text-center">
                         <button
                           onClick={() => handleOpenModal(url)}
-                          className="text-indigo-600 hover:text-indigo-900 font-medium"
+                          className="text-indigo-600 hover:text-indigo-900"
+                          data-tooltip-id="global-tooltip"
+                          data-tooltip-content="Edit this link's slug"
                         >
-                          Edit
+                          <FaPencilAlt />
                         </button>
                       </td>
                     </tr>
@@ -191,10 +247,16 @@ export default function UrlsPage(): JSX.Element {
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage === 1}
                 className="px-4 py-2 text-sm rounded-md bg-gray-200 disabled:opacity-50"
+                data-tooltip-id="global-tooltip"
+                data-tooltip-content="Previous page"
               >
                 Previous
               </button>
-              <span className="text-sm">
+              <span
+                className="text-sm"
+                data-tooltip-id="global-tooltip"
+                data-tooltip-content={`Current page: ${currentPage} of ${totalPages}`}
+              >
                 Page {currentPage} of {totalPages}
               </span>
               <button
@@ -203,13 +265,22 @@ export default function UrlsPage(): JSX.Element {
                 }
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 text-sm rounded-md bg-gray-200 disabled:opacity-50"
+                data-tooltip-id="global-tooltip"
+                data-tooltip-content="Next page"
               >
                 Next
               </button>
             </div>
           </>
         ) : (
-          !error && <p>You haven&apos;t created any URLs yet.</p>
+          !error && (
+            <p
+              data-tooltip-id="global-tooltip"
+              data-tooltip-content="You haven't created any URLs yet."
+            >
+              You haven&apos;t created any URLs yet.
+            </p>
+          )
         )}
       </main>
 

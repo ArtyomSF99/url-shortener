@@ -2,6 +2,7 @@
 
 import { JSX, useState, FormEvent } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 /**
  * Authentication form component for login and registration.
@@ -22,16 +23,35 @@ export function AuthForm({ formType, onSubmit }: AuthFormProps): JSX.Element {
   ): Promise<void> => {
     event.preventDefault();
 
+    // Simple frontend validation for email and password
+    if (!email.trim()) {
+      setError("Email is required.");
+      toast.error("Email is required.");
+      return;
+    }
+    if (!password) {
+      setError("Password is required.");
+      toast.error("Password is required.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      toast.error("Password must be at least 8 characters long.");
+      return;
+    }
+
     setError("");
     setIsLoading(true);
-    
+
     try {
       await onSubmit(email, password);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
+        toast.error(err.message);
       } else {
         setError("An unexpected error occurred.");
+        toast.error("An unexpected error occurred.");
       }
     } finally {
       setIsLoading(false);
@@ -97,7 +117,7 @@ export function AuthForm({ formType, onSubmit }: AuthFormProps): JSX.Element {
             {isLoading ? loadingText : buttonText}
           </button>
         </form>
-        {error && <p className="text-red-500 text-center text-sm">{error}</p>}
+
         <p className="text-center text-sm">
           <Link
             href={linkHref}

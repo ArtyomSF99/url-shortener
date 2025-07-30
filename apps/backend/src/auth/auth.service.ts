@@ -8,17 +8,26 @@ import { ApiException } from 'src/common/exceptions/api.exception';
 import { ErrorCode } from 'src/common/exceptions/error-codes.enum';
 import { Worker } from 'worker_threads';
 import * as path from 'path';
+import { ConfigService } from '@nestjs/config';
+import { RunMode } from 'src/common/config/run-mode.enum';
+import { EnvKey } from 'src/common/config/env-keys.enum';
 
 /**
  * Service for authentication logic, including sign-in and registration.
  */
 @Injectable()
 export class AuthService {
+  private isProduction: boolean;
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private configService: ConfigService,
     @InjectQueue('registration') private registrationQueue: Queue,
-  ) {}
+  ) {
+    this.isProduction =
+      this.configService.get<string>(EnvKey.NODE_ENV) === RunMode.PRODUCTION;
+  }
 
   private async comparePasswordInWorker(
     password: string,
@@ -31,13 +40,12 @@ export class AuthService {
         workerData: { password, hash },
       });
 
-      worker.on('message', resolve);
-      worker.on('error', reject);
-      worker.on('exit', (code) => {
-        if (code !== 0) {
-          reject(new Error(`Worker stopped with exit code ${code}`));
-        }
-      });
+      worker
+        .on('message', resolve)
+        .on('error', reject)
+        .on('exit', (code) => {
+          code !== 0 && reject(Error(`Worker stopped with exit code ${code}`));
+        });
     });
   }
 
@@ -46,8 +54,8 @@ export class AuthService {
 
     if (!user) {
       throw new ApiException(
-        'Invalid credentials',
-        ErrorCode.INVALID_CREDENTIALS,
+        'User not found',
+        ErrorCode.USER_NOT_FOUND,
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -77,7 +85,7 @@ export class AuthService {
       email: createUserDto.email,
       password: createUserDto.password,
     });
-    
+
     return {
       message: 'Registration has been queued and will be processed shortly.',
     };

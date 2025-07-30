@@ -17,26 +17,45 @@ export function Navbar(): JSX.Element {
     router.push("/login");
   };
 
+  if (!token) {
+    return <></>;
+  }
+
   return (
     <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-10">
       <div className="container mx-auto px-6 py-3 flex justify-between items-center">
-        <Link href="/" className="text-xl font-bold text-indigo-600">
+        <Link
+          href="/"
+          className="text-xl font-bold text-indigo-600"
+          data-tooltip-id="global-tooltip"
+          data-tooltip-content="Go to the home page"
+        >
           URL Shortener
         </Link>
         <div className="flex space-x-4 items-center">
           {isLoading ? (
-            <div className="text-sm text-gray-500">Loading...</div>
+            <div
+              className="text-sm text-gray-500"
+              data-tooltip-id="global-tooltip"
+              data-tooltip-content="Loading user data..."
+            >
+              Loading...
+            </div>
           ) : token ? (
             <>
               <Link
                 href="/urls"
                 className="text-gray-700 hover:text-indigo-600"
+                data-tooltip-id="global-tooltip"
+                data-tooltip-content="View your shortened URLs"
               >
                 My URLs
               </Link>
               <button
                 onClick={handleLogout}
                 className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium"
+                data-tooltip-id="global-tooltip"
+                data-tooltip-content="Logout from your account"
               >
                 Logout
               </button>
@@ -46,12 +65,16 @@ export function Navbar(): JSX.Element {
               <Link
                 href="/login"
                 className="text-gray-700 hover:text-indigo-600"
+                data-tooltip-id="global-tooltip"
+                data-tooltip-content="Go to the login page"
               >
                 Login
               </Link>
               <Link
                 href="/register"
                 className="text-gray-700 hover:text-indigo-600"
+                data-tooltip-id="global-tooltip"
+                data-tooltip-content="Register a new account"
               >
                 Register
               </Link>

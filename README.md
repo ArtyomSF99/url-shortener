@@ -1,12 +1,18 @@
-# Full-Stack URL Shortener
+# URL Shortener Project
 
-This is a comprehensive, production-ready URL shortening service built as a full-stack application. It features a modern, scalable backend API and a responsive React frontend, all containerized with Docker for consistent development and deployment.
-
-The project not only fulfills all core requirements but also implements a wide range of **Extra Credit** features to demonstrate best practices in performance, security, and professional software architecture.
+A full-stack URL shortener application using Next.js (frontend), Node.js (backend), PostgreSQL, and Redis. Supports both development and production environments with Docker Compose.
 
 ---
 
 ## Features
+
+- Shorten URLs with analytics
+- RESTful API backend (Node.js)
+- Modern frontend (Next.js)
+- PostgreSQL for persistent storage
+- Redis for caching
+- JWT authentication
+- Dockerized for easy deployment
 
 ### Core Requirements
 
@@ -21,7 +27,7 @@ The project not only fulfills all core requirements but also implements a wide r
 
 - ✅ **User Accounts:** Full user registration and login system using JWT for authentication.
 - ✅ **User-Specific URLs:** Users can only view and manage the URLs they have created.
-- ✅ **URL Validation:** The backend validates that the provided string is a valid URL format.
+- ✅ **URL Validation:** The backend ensures that any submitted URL is properly formatted and valid before shortening.
 - ✅ **Copy to Clipboard:** A user-friendly button to easily copy the shortened URL.
 - ✅ **Custom Slug Editing:** Logged-in users can edit the slug of their own links.
 - ✅ **Visit Tracking:** The system tracks the number of visits for each shortened URL.
@@ -41,106 +47,101 @@ The project not only fulfills all core requirements but also implements a wide r
 - **Frontend:** Next.js, React, TypeScript, Tailwind CSS
 - **DevOps & Tooling:** Docker, Docker Compose, pnpm (Workspaces), k6 (for stress testing)
 
----
+## Prerequisites
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v20 or later)
-- pnpm
-- Docker
+- [Docker](https://www.docker.com/get-started)
+- [Docker Compose](https://docs.docker.com/compose/)
 
 ---
 
-### 1. Initial Setup
+## Environment Variables
 
-Clone the repository and install all dependencies for the monorepo with a single command from the project root:
+Copy `.env.example` to `.env` and fill in the required values:
 
-```sh
-pnpm run setup
+```bash
+cp .env.example .env
 ```
 
----
-
-### 2. Environment Variables
-
-This project uses `.env` files for configuration.
-
-```sh
-cp .env.example .env.development
-cp .env.example .env.production
-```
-
-Fill in the required values in both `.env.development` and `.env.production`.
+- `.env.example` documents all required variables for both development and production.
+- **Never commit your real `.env` files.**
 
 ---
 
-## How to Run
+## Development
 
-You can run the application in two modes: **Development (hybrid)** or **Production (fully containerized)**.
+Start backend, database, and Redis for development:
 
----
-
-### Development Mode
-
-This mode is optimized for development. It runs the backend services (API, DB, Redis) in Docker and the Next.js frontend on your local machine for the best hot-reloading experience.
-
-You can either start the backend and frontend separately in two terminals, or run everything together with a single command.
-
-#### Option 1: Separate Terminals
-
-**In Terminal 1 (Backend):**
-
-```sh
-# Starts the backend, database, and Redis containers
-pnpm run dev:backend
+```bash
+docker compose -f docker-compose.dev.yml up --build
 ```
-
-**In Terminal 2 (Frontend):**
-
-```sh
-# Starts the Next.js development server locally
-pnpm run dev:frontend
-```
-
-#### Option 2: All Together
-
-```sh
-# Starts both backend and frontend concurrently
+or 
+```bash
 pnpm dev
 ```
 
-- Backend API: [http://localhost:3000](http://localhost:3000)
-- Frontend App: [http://localhost:3001](http://localhost:3001)
+- Backend: http://localhost:3001
+- PostgreSQL: localhost:5432
+- Redis: localhost:6379
 
-To stop the development backend services, run:
-
-```sh
-pnpm run dev:down
-```
+> The frontend is not included in the dev compose file. Run it locally with `npm run dev` or similar inside `apps/frontend`.
 
 ---
 
-### Production Mode
+## Production
 
-This mode builds and runs optimized, production-ready containers for the entire application stack (frontend, backend, db, redis).
+Build and run the full stack (frontend, backend, db, redis):
 
-To start all services:
-
-```sh
-# This command builds and starts all containers in the background (-d)
-pnpm run prod:up
+```bash
+docker compose -f docker-compose.prod.yml up --build
+```
+or
+```bash
+pnpm prod:up
 ```
 
-- Backend API: [http://localhost:3000](http://localhost:3000)
-- Frontend App: [http://localhost:3001](http://localhost:3001)
+- Frontend: http://localhost:3002
+- Backend: http://localhost:3001
 
-To stop all production services:
+---
 
-```sh
-pnpm run prod:down
-```
+## File Structure
+
+- `apps/frontend` - Next.js frontend
+- `apps/backend` - Node.js backend
+- `docker-compose.dev.yml` - Dev services (backend, db, redis)
+- `docker-compose.prod.yml` - Production stack (frontend, backend, db, redis)
+- `.env.example` - Example environment variables
+
+---
+
+## Data Persistence
+
+- PostgreSQL and Redis data are persisted in Docker volumes:
+  - Dev: `postgres_data_dev`, `redis_data_dev`
+  - Prod: `postgres_data_prod`, `redis_data_prod`
+
+---
+
+## Healthchecks
+
+- Production services use healthchecks for `db` and `redis` to ensure backend waits for dependencies.
+
+---
+
+## Useful Commands
+
+- **Stop all containers:**  
+  `docker compose -f docker-compose.dev.yml down` or `pnpm dev:down`  
+  `docker compose -f docker-compose.prod.yml down` or `pnpm prod:down`
+- **Remove volumes:**  
+  Add `-v` to the above commands.
+
+---
+
+## Notes
+
+- Update `NEXT_PUBLIC_API_URL` and other URLs in your `.env` as needed.
+- For production, ensure you set secure values for secrets.
 
 ---
 

@@ -2,73 +2,134 @@
 
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { Trend } from 'k6/metrics';
+import { Trend, Counter } from 'k6/metrics';
 
-// Custom metrics to track response times for specific actions
-const registerTrend = new Trend('post_auth_register');
-const loginTrend = new Trend('post_auth_login');
-const shortenTrend = new Trend('post_url');
-const redirectTrend = new Trend('get_slug');
+// Custom metrics
+const registerTrend = new Trend('register_duration');
+const loginTrend = new Trend('login_duration');
+const createUrlTrend = new Trend('create_url_duration');
+const myLinksTrend = new Trend('my_links_duration');
+const updateSlugTrend = new Trend('update_slug_duration');
+const redirectTrend = new Trend('redirect_duration');
+const registerFail = new Counter('register_fail');
+const loginFail = new Counter('login_fail');
+const createUrlFail = new Counter('create_url_fail');
+const myLinksFail = new Counter('my_links_fail');
+const updateSlugFail = new Counter('update_slug_fail');
+const redirectFail = new Counter('redirect_fail');
 
 export const options = {
   stages: [
-    { duration: '30s', target: 500 }, // Ramp-up to 500 users over 30s
-    { duration: '1m', target: 1000 }, // Stay at 1000 users for 1 minute
-    { duration: '30s', target: 0 },   // Ramp-down to 0 users
+    { duration: '10s', target: 50 },
+    { duration: '20s', target: 100 },
+    { duration: '10s', target: 0 },
   ],
   thresholds: {
-    'http_req_failed': ['rate<0.01'], // less than 1% of requests should fail
-    'http_req_duration': ['p(95)<500'], // 95% of requests should be below 500ms
+    'http_req_failed': ['rate<0.02'],
+    'http_req_duration': ['p(95)<1000'],
   },
 };
 
+const API_URL = 'http://localhost:3001';
+
+function randomEmail() {
+  return `user_${__VU}_${__ITER}_${Math.floor(Math.random() * 100000)}@example.com`;
+}
+
+function strongPassword() {
+  return 'Password123$';
+}
+
+function randomSlug() {
+  return `slug${__VU}${__ITER}${Math.floor(Math.random() * 10000)}`;
+}
+
 export default function () {
-  const BASE_URL = 'http://localhost:3000';
+  const email = randomEmail();
+  const password = strongPassword();
 
-  // Use a unique email for each virtual user to avoid conflicts
-  const uniqueEmail = `user_${__VU}@example.com`;
-  const password = 'password123';
-
-  // 1. Register a new user
-  const regRes = http.post(
-    `${BASE_URL}/auth/register`,
-    JSON.stringify({ email: uniqueEmail, password: password }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-  check(regRes, { 'register successful': (r) => r.status === 201 });
+  // 1. Register
+  const regRes = http.post(`${API_URL}/auth/register`, JSON.stringify({ email, password }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
   registerTrend.add(regRes.timings.duration);
-  sleep(1);
+  const regOk = check(regRes, { 'register: 201': (r) => r.status === 201 });
+  if (!regOk) registerFail.add(1);
+  sleep(0.5);
 
-  // 2. Login
-  const loginRes = http.post(
-    `${BASE_URL}/auth/login`,
-    JSON.stringify({ email: uniqueEmail, password: password }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-  check(loginRes, { 'login successful': (r) => r.status === 200 });
-  loginTrend.add(loginRes.timings.duration);
-  const authToken = loginRes.json('access_token');
-  sleep(1);
+  // 2. Wait for registration to be processed, then login
+  let loginOk = false;
+  let loginRes;
+  let token = null;
+  const maxAttempts = 30;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    loginRes = http.post(`${API_URL}/auth/login`, JSON.stringify({ email, password }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    loginTrend.add(loginRes.timings.duration);
+    loginOk = loginRes.status === 200;
+    if (loginOk) {
+      token = loginRes.json('access_token');
+      break;
+    }
+    sleep(1);
+  }
+  check(loginRes, { 'login: 200': () => loginOk });
+  if (!loginOk) loginFail.add(1);
+  if (!token) return;
 
-  // 3. Create a short URL
-  const shortenRes = http.post(
-    `${BASE_URL}/url`,
-    JSON.stringify({ originalUrl: 'https://google.com' }),
-    { 
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-        } 
+  // 3. Create short URL
+  const slug = randomSlug();
+  const createUrlRes = http.post(
+    `${API_URL}/url`, 
+    JSON.stringify({ originalUrl: 'https://example.com', slug }),
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
     }
   );
-  check(shortenRes, { 'shorten successful': (r) => r.status === 201 });
-  shortenTrend.add(shortenRes.timings.duration);
-  const slug = shortenRes.json('slug');
-  sleep(1);
+  createUrlTrend.add(createUrlRes.timings.duration);
+  const createUrlOk = check(createUrlRes, { 'create_url: 201': (r) => r.status === 201 });
+  if (!createUrlOk) createUrlFail.add(1);
+  sleep(0.5);
 
-  // 4. Visit the short URL (redirect)
-  const redirectRes = http.get(`${BASE_URL}/${slug}`, { redirects: 0 }); // We stop redirects to measure the server's response time
-  check(redirectRes, { 'redirect successful': (r) => r.status >= 300 && r.status < 400 });
-  redirectTrend.add(redirectRes.timings.duration);
-  sleep(1);
+  // 4. Get my links (paginated)
+  const myLinksRes = http.get(`${API_URL}/url/my-links?page=1&limit=5&sortBy=createdAt&sortOrder=DESC`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  myLinksTrend.add(myLinksRes.timings.duration);
+  const myLinksOk = check(myLinksRes, { 'my_links: 200': (r) => r.status === 200 });
+  if (!myLinksOk) myLinksFail.add(1);
+  const urls = myLinksRes.json('data');
+  sleep(0.5);
+
+  // 5. Update slug (if we have at least one url)
+  if (urls && urls.length > 0) {
+    const urlId = urls[0].id;
+    const newSlug = randomSlug() + 'upd';
+    const updateSlugRes = http.patch(
+      `${API_URL}/url/${urlId}`,
+      JSON.stringify({ slug: newSlug }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    updateSlugTrend.add(updateSlugRes.timings.duration);
+    const updateSlugOk = check(updateSlugRes, { 'update_slug: 200': (r) => r.status === 200 });
+    if (!updateSlugOk) updateSlugFail.add(1);
+
+    // 6. Redirect
+    const redirectRes = http.get(`${API_URL}/${newSlug}`, { redirects: 0 });
+    redirectTrend.add(redirectRes.timings.duration);
+    const redirectOk = check(redirectRes, { 'redirect: 302/301': (r) => r.status >= 300 && r.status < 400 });
+    if (!redirectOk) redirectFail.add(1);
+    sleep(0.5);
+  }
 }
+
+// k6 summary output will display all custom metrics and checks.

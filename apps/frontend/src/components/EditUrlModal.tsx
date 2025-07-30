@@ -23,14 +23,12 @@ export function EditUrlModal({
   onUpdateSuccess,
 }: EditUrlModalProps): JSX.Element | null {
   const [newSlug, setNewSlug] = useState<string>("");
-  const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { token } = useAuth();
 
   useEffect(() => {
     if (url) {
       setNewSlug(url.slug);
-      setError("");
     }
   }, [url]);
 
@@ -44,20 +42,15 @@ export function EditUrlModal({
     event.preventDefault();
 
     setIsLoading(true);
-    setError("");
 
     try {
       const updatedUrl = await apiService.updateSlug(url.id, newSlug, token);
 
       onUpdateSuccess(updatedUrl);
-      
+
       onClose();
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unknown error occurred.");
-      }
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +84,6 @@ export function EditUrlModal({
               />
             </div>
           </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
           <div className="flex justify-end space-x-2 pt-4">
             <button
               type="button"

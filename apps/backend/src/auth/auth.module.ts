@@ -7,6 +7,8 @@ import { UsersModule } from '../users/users.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategy/jwt.strategy';
+import { RegistrationProcessor } from './registration.processor';
+import { EnvKey } from 'src/common/config/env-keys.enum';
 
 /**
  * Module for authentication logic and configuration.
@@ -19,7 +21,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.get<string>(EnvKey.JWT_SECRET),
         signOptions: { expiresIn: '60m' },
       }),
     }),
@@ -27,7 +29,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
       name: 'registration',
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, RegistrationProcessor],
   controllers: [AuthController],
 })
 export class AuthModule {}

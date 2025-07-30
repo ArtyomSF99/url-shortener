@@ -71,6 +71,10 @@ export enum ErrorCode {
    * The requested URL (by slug or ID) was not found.
    */
   URL_NOT_FOUND = 'E5001_URL_NOT_FOUND',
+  /**
+   * The provided URL is invalid or the domain is not reachable.
+   */
+  INVALID_URL = 'E5002_INVALID_URL',
 
   // ===============================================================
   // Rate Limiting Errors (8xxx)

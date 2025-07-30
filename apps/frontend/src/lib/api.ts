@@ -1,5 +1,6 @@
 import { ApiErrorResponse, PaginatedUrlsResponse, Url } from "../types";
 import { API_ENDPOINTS } from "./constants";
+import { toast } from "sonner";
 import { SignInDto } from "../types/dto/sign-in.dto";
 import { CreateUserDto } from "@/types/dto/create-user.dto";
 
@@ -15,6 +16,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
     const errorMessage = Array.isArray(errorData.message)
       ? errorData.message.join(", ")
       : errorData.message;
+
+    toast.error(errorMessage || "An unknown API error occurred");
 
     throw new Error(errorMessage || "An unknown API error occurred");
   }
